@@ -1,0 +1,393 @@
+#!/bin/sh
+
+set -e
+
+qn_root=$(dirname $(readlink -f "$0"))
+
+QN_TMPL_PATH=${QENETH_PATH:-.:$qn_root/templates}
+qn_tmpl_path="$(echo $QN_TMPL_PATH | sed -e 's|:| |g')"
+
+die()
+{
+    printf "ERROR: %s\n" "$@" >&2
+    exit 1
+}
+
+warn()
+{
+    printf "Warn: %s\n" "$@" >&2
+}
+
+info()
+{
+    printf "Info: %s\n" "$@" >&2
+}
+
+selftest()
+{
+    gvpr -V >/dev/null 2>&1 || die "gvpr(1) not found, is graphviz installed?"
+    mustache -v >/dev/null 2>&1 || die "mustache(1) not found, is ruby-mustache installed?"
+
+    if [ "$1" = "-g" ]; then
+	[ -f topology.dot.in ] && return
+	die "No topology.dot.in to generate topology.dot from"
+    else
+	[ -f topology.dot ] && return
+	die "No topology.dot, please run $0 generate first"
+    fi
+}
+
+nodeattr()
+{
+    gvpr -a "$1 $2" '
+	N [$.name == ARGV[0] && hasAttr($, ARGV[1])] {
+		print(aget($, ARGV[1]));
+		exit(0);
+	}
+
+	END {
+		exit(1);
+	}' topology.dot
+}
+
+
+gentopology()
+{
+    info "Generating topology"
+    gvpr -o topology.dot '
+	BEGIN {
+		int ctrl = 10000;
+		int data = 20000;
+
+		void sdflt(obj_t obj, string attr, string val) {
+			if (hasAttr(obj, attr) && aget(obj, attr))
+				return;
+
+			if (hasAttr(obj.root, attr) && aget(obj.root, attr)) {
+				aset(obj, attr, aget(obj.root, attr));
+				return;
+			}
+
+			aset(obj, attr, val);
+		}
+
+		void idflt(obj_t obj, string attr, int val) {
+			if (hasAttr(obj, attr) && aget(obj, attr))
+				return;
+
+			aset(obj, attr, val);
+		}
+	}
+
+	N {
+		edge_t e;
+
+		if ($.name == "host")
+			return;
+
+		sdflt($, "qn_template", "node");
+		idflt($, "qn_console", ctrl + 0);
+		idflt($, "qn_monitor", ctrl + 1);
+		idflt($, "qn_kgdb",    ctrl + 2);
+		idflt($, "qn_ugdb",    ctrl + 3);
+		ctrl += 10;
+
+		for (e = fstedge($); e; e = nxtedge(e, $)) {
+			if (e.head.name == "host") {
+				sdflt(e, "qn_tap", e.headport);
+			} else if (e.tail.name == "host") {
+				sdflt(e, "qn_tap", e.tailport);
+			} else {
+				idflt(e, "qn_headport", data++);
+				idflt(e, "qn_tailport", data++);
+			}
+		}
+	}
+
+	END_G {
+	      $O = $;
+	}
+	' topology.dot.in
+}
+
+genyaml()
+{
+    info "Generating node YAML"
+
+    # Write all global and per-node attributes
+    gvpr '
+    	N [$.qn_template] {
+    		int yaml;
+
+    		yaml = openF(sprintf("%s.yaml", $.name), "w+");
+    		if (yaml < 0)
+    			exit(1);
+
+    		printf(yaml, "graph: %s\n", $G.name);
+
+    		/* Output global attributes (unless the node overrides them) */
+    		for (attr = fstAttr($G, "G"); attr; attr = nxtAttr($G, "G", attr)) {
+    		    if (hasAttr($, attr) && aget($, attr))
+    		    	continue;
+
+    		    printf(yaml, "%s: %s\n", attr, aget($G, attr));
+    		}
+
+    		printf(yaml, "name: %s\n", $.name);
+
+    		/* Output node attributes */
+    		for (attr = fstAttr($G, "N"); attr; attr = nxtAttr($G, "N", attr)) {
+    		    if (!(hasAttr($, attr) && aget($, attr)))
+    		    	continue;
+
+    		    printf(yaml, "%s: %s\n", attr, aget($, attr));
+    		}
+
+    		printf(yaml, "links:\n");
+    		closeF(yaml);
+    	}' topology.dot
+
+    # Version sort port names in the generated YAML. Naming ports
+    # eth0, eth1 etc. will then result in a 1:1 mapping between
+    # topology and Linux interface names.
+    gvpr '
+	N [$.qn_template] {
+		edge_t e;
+
+		for (e = fstedge($); e; e = nxtedge(e, $)) {
+			printf("%s", $.name);
+
+			if (e.qn_headport) {
+				if (e.head == $)
+					printf(" qn_name %s qn_sport %d qn_dport %d", e.headport, e.qn_headport, e.qn_tailport);
+				else
+					printf(" qn_name %s qn_sport %d qn_dport %d", e.tailport, e.qn_tailport, e.qn_headport);
+			} else {
+				if (e.head == $)
+					printf(" qn_name %s ", e.headport);
+				else
+					printf(" qn_name %s ", e.tailport);
+			}
+
+			for (attr = fstAttr($G, "E"); attr; attr = nxtAttr($G, "E", attr)) {
+    		    		if (!(hasAttr(e, attr) && aget(e, attr)))
+    		    			continue;
+
+				printf(" %s %s", attr, aget(e, attr));
+			}
+
+			printf(" %s.yaml\n", $.name);
+		}
+	}
+	' topology.dot | sort -V | awk 'BEGIN { nid = -1; } {
+		if (!links[$1])
+			nid++;
+
+		printf("  - {") >>$NF;
+		for (attr = 2; attr < NF; attr += 2) {
+			val = attr + 1;
+
+			if (attr == "qn_mac")
+				seen_mac = true;
+
+			printf(" %s: \"%s\",", $attr, $val) >>$NF;
+		}
+
+		printf(" qn_mac: \"02:00:00:00:%2.2x:%2.2x\"", nid, links[$1]) >>$NF;
+
+		printf(" }\n") >>$NF;
+
+		links[$1]++;
+	}'
+
+}
+
+genexec()
+{
+    info "Generating executables"
+
+    set -- $(gvpr 'N [$.qn_template] {
+		print($.name + " " + $.qn_template);
+	}' topology.dot)
+
+    while [ $# -ge 2 ]; do
+	for dir in $qn_tmpl_path ""; do
+	    [ ! "$dir" ] && die "Unable to find a template matching \"$2\" for $1"
+
+	    tmpl=$dir/$2.mustache
+	    [ -f $tmpl ] && break;
+	done
+
+	env -C $(dirname $tmpl) mustache $(realpath $1.yaml) $(basename $tmpl) >$1
+	chmod +x $1
+	shift 2
+    done
+}
+
+generate()
+{
+    gentopology
+    genyaml
+    genexec
+}
+
+start()
+{
+    if [ -f $1.pid ]; then
+	if kill -0 $(cat $1.pid) 2>/dev/null; then
+	    info "$1 is already running, skipping"
+	    return
+	fi
+
+	warn "$1 terminated unexpectedly, relaunching"
+    fi
+
+    info "Launching $1"
+    setsid ./$1 >>$1.log 2>&1 </dev/null &
+    echo $! >$1.pid
+}
+
+stop()
+{
+    if [ ! -f $1.pid ]; then
+	info "$1 is not running, skipping"
+	return
+    fi
+
+    pid=$(cat $1.pid)
+
+    if ! kill -0 $pid 2>/dev/null; then
+	info "$1 terminated unexpectedly, cleaning up pidfile"
+	rm $1.pid
+	return
+    fi
+
+    info "Stopping $1"
+    kill $pid
+    wait $pid || true
+    rm $1.pid
+}
+
+startstop()
+{
+    cmd=$1
+    shift
+
+    if [ "$1" ]; then
+	nodes="$@"
+    else
+	nodes=$(gvpr 'N [$.qn_console] { print($.name); }' topology.dot)
+    fi
+
+    for node in $nodes; do
+	$cmd $node
+    done
+}
+
+dostatus()
+{
+    printf "\e[7m%-8s  %8s  %5s  %5s\e[0m\n" NODE PID CNSOL MONTR
+
+    gvpr '
+	N [$.qn_console] {
+		string pidfile, pid = "stopped";
+		int fd;
+
+		pidfile = $.name + ".pid";
+		fd = openF(pidfile, "r");
+		if (fd >= 0) {
+			pid = sub(readL(fd), "\n");
+			closeF(fd);
+
+			if (system(sprintf("kill -0 %s >/dev/null 2>&1", pid)))
+				pid = "lost";
+		}
+
+		printf("%-8s  %8s  %5d  %5d\n", $.name, pid,
+			aget($, "qn_console"), aget($, "qn_monitor"));
+      	}
+    ' topology.dot
+}
+
+doconsole()
+{
+    port=$(nodeattr $1 qn_console || die "No console for $1")
+
+    telnet localhost $port
+}
+
+domonitor()
+{
+    port=$(nodeattr $1 qn_monitor || die "No monitor for $1")
+
+    telnet localhost $port
+}
+
+usage()
+{
+    cat <<EOF
+usage: ${0} <command> [<args>]
+
+  ${0} generate
+    Generate all files required to start the topology.
+
+  ${0} status
+    Show status information.
+
+  ${0} start [<node>...]
+    Launch the given nodes. If no nodes are specified, all nodes in
+    the topology are launched.
+
+  ${0} stop [<node>...]
+    Terminate the given nodes. If no nodes are specified, all nodes
+    are stopped.
+
+  ${0} restart [<node>...]
+    Stop and start the given nodes. If no nodes are specified, all
+    nodes are restarted.
+
+  ${0} console <node>
+    Start a telnet session to the specified node's console.
+
+  ${0} monitor <node>
+    Start a telnet session to the specified node's monitor.
+
+  ${0} help
+    Display this message.
+
+EOF
+}
+
+if [ $# -lt 1 ]; then
+    usage && exit 1
+fi
+
+cmd=${1}
+shift
+
+case ${cmd} in
+    generate)
+	selftest -g
+	generate
+	;;
+    status|console|monitor)
+	selftest
+	do${cmd} "$@"
+	;;
+    start|stop)
+	selftest
+	startstop ${cmd} "$@"
+	;;
+    restart)
+	selftest
+	startstop stop "$@"
+	# Avoid "address already in use" issues
+	sleep 0.5
+	startstop start "$@"
+	;;
+    "help")
+	usage && exit 0
+	;;
+    *)
+	usage && exit 1
+esac
