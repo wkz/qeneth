@@ -29,6 +29,9 @@ Installation
 
 Clone the repository and place `qeneth` is in your `$PATH`.
 
+Basic completion support for Bash is available. Copy or symlink
+`qeneth-complete.sh` to `/etc/bash_completion.d` to enable it.
+
 
 Tutorial
 --------
