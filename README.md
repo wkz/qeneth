@@ -27,7 +27,13 @@ also be run manually or through some other process monitor.
 Installation
 ------------
 
-Clone the repository and place `qeneth` is in your `$PATH`.
+Clone the repository and place `qeneth` is in your `$PATH`.  A few tools
+are required to run, on Debian based systems like Ubuntu or Linux Mint:
+
+```sh
+~$ sudo apt install e2fsprogs graphviz ruby-mustache squashfs-tools \
+        qemu-system-x86 qemu-utils
+```
 
 > Basic completion support for Bash is available. Copy or symlink
 > `qeneth-complete.sh` to `/etc/bash_completion.d` to enable it.
