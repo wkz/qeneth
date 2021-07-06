@@ -29,8 +29,8 @@ Installation
 
 Clone the repository and place `qeneth` is in your `$PATH`.
 
-Basic completion support for Bash is available. Copy or symlink
-`qeneth-complete.sh` to `/etc/bash_completion.d` to enable it.
+> Basic completion support for Bash is available. Copy or symlink
+> `qeneth-complete.sh` to `/etc/bash_completion.d` to enable it.
 
 
 Tutorial
@@ -41,7 +41,7 @@ VMs. Let's start by creating our directory where all files related to
 our network will be stored, and download a pre-built NetBox image into
 it:
 
-```
+```sh
 ~$ mkdir my-network
 ~$ cd my-network/
 ~/my-network$ wget -q https://nightly.link/westermo/netbox/workflows/nightly-os/master/netbox-os-zero.zip
@@ -51,13 +51,13 @@ Archive:  netbox-os-zero.zip
 ~/my-network$ rm netbox-os-zero.zip
 ```
 
-Next, let's setup our topology, saving it as `topology.dot.in`:
+Next, let's setup our topology, edit `~/my-network/topology.dot.in`:
 
-```
-~/my-network$ cat topology.dot.in
+```.dot
 graph "my-network" {
         node [shape=record];
         qn_template="netbox-os-zero";
+        qn_append="quiet";
 
         server [label="server | { <eth0> eth0 | <eth1> eth1 }"];
         client1 [label="client1 | { <eth0> eth0 }"];
@@ -68,13 +68,14 @@ graph "my-network" {
 }
 ```
 
-Use your favorite graphviz(7) layout engine to visualize it:
+Use your favorite graphviz(7) layout engine to visualize it.  Here
+we've used `neato -Tpng topology.dot.in -otopology.png`:
 
 ![Network topology](topology.png)
 
 Everything we need is in place - now we can generate the executables:
 
-```
+```sh
 ~/my-network(v) qeneth generate
 Info: Generating topology
 Info: Generating node YAML
@@ -86,7 +87,7 @@ client1.yaml  client2.yaml  server              topology.dot
 
 Finally, we can start our network:
 
-```
+```sh
 ~/my-network$ qeneth start
 Info: Launching server
 Info: Launching client1
@@ -100,7 +101,7 @@ client2    2811528  10020  10021
 
 After this we can attach to the different nodes and poke around:
 
-```
+```sh
 ~/my-network$ qeneth console server
 Trying ::1...
 Connected to localhost.
@@ -125,7 +126,7 @@ telnet> Connection closed.
 
 When we are done, we stop all the nodes:
 
-```
+```sh
 ~/my-network$ qeneth stop
 Info: Stopping server
 Info: Stopping client1
