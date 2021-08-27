@@ -1,4 +1,6 @@
 {{#links}}
   -device virtio-net,netdev={{qn_name}},mac={{qn_mac}} \
-    -netdev {{#qn_tap}}tap,id={{qn_name}},ifname={{qn_tap}}{{/qn_tap}}{{#qn_dport}}socket,id={{qn_name}},udp=localhost:{{qn_dport}},localaddr=localhost:{{qn_sport}}{{/qn_dport}} \
+    {{^qn_bridge}}{{#qn_tap}}-netdev tap,id={{qn_name}},ifname={{qn_tap}}{{/qn_tap}}{{/qn_bridge}} \
+    {{#qn_bridge}}-netdev bridge,id={{qn_name}},br={{qn_bridge}}{{/qn_bridge}} \
+    {{#qn_dport}}-netdev socket,id={{qn_name}},udp=localhost:{{qn_dport}},localaddr=localhost:{{qn_sport}}{{/qn_dport}} \
 {{/links}}
