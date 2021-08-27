@@ -323,6 +323,13 @@ domonitor()
     telnet localhost $port
 }
 
+dolink()
+{
+    port=$(nodeattr $1 qn_monitor || die "No monitor for $1")
+
+    echo "set_link $2 $3" | nc -N localhost $port >/dev/null
+}
+
 usage()
 {
     cat <<EOF
@@ -352,6 +359,9 @@ usage: ${0} <command> [<args>]
   ${0} monitor <node>
     Start a telnet session to the specified node's monitor.
 
+  ${0} link <node> <port> on|off
+    Set the "physical" link state of the specified port.
+
   ${0} help
     Display this message.
 
@@ -370,7 +380,7 @@ case ${cmd} in
 	selftest -g
 	generate
 	;;
-    status|console|monitor)
+    status|console|monitor|link)
 	selftest
 	do${cmd} "$@"
 	;;

@@ -17,11 +17,11 @@ _qeneth()
 
     if [[ $COMP_CWORD -eq 1 ]] ; then
 	COMPREPLY=($(compgen -W "generate status \
-		    start stop restart console monitor help" -- $cur))
+		    start stop restart console monitor link help" -- $cur))
     else
 	command=${COMP_WORDS[1]}
 	case $command in
-	    start|stop|restart|console|monitor)
+	    start|stop|restart|console|monitor|link)
 		COMPREPLY=($(compgen -W "$(_nodes)" -- $cur))
 		;;
 	esac
