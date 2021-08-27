@@ -330,6 +330,11 @@ dolink()
     echo "set_link $2 $3" | nc -N localhost $port >/dev/null
 }
 
+doweb()
+{
+    exec $qn_root/web/app.py $1
+}
+
 usage()
 {
     cat <<EOF
@@ -362,6 +367,10 @@ usage: ${0} <command> [<args>]
   ${0} link <node> <port> on|off
     Set the "physical" link state of the specified port.
 
+  ${0} web [<port>]
+    Launch interactive web interface on the specified port, or 8080
+    by default.
+
   ${0} help
     Display this message.
 
@@ -380,7 +389,7 @@ case ${cmd} in
 	selftest -g
 	generate
 	;;
-    status|console|monitor|link)
+    status|console|monitor|link|web)
 	selftest
 	do${cmd} "$@"
 	;;

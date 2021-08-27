@@ -16,7 +16,7 @@ _qeneth()
     cur=${COMP_WORDS[COMP_CWORD]}
 
     if [[ $COMP_CWORD -eq 1 ]] ; then
-	COMPREPLY=($(compgen -W "generate status \
+	COMPREPLY=($(compgen -W "generate status web \
 		    start stop restart console monitor link help" -- $cur))
     else
 	command=${COMP_WORDS[1]}
