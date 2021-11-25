@@ -1,0 +1,17 @@
+#!/bin/sh
+
+con=hvc0
+tty -s && con=hvc2
+
+img={{#qn_image}}{{qn_image}}{{/qn_image}}{{^qn_image}}netbox-os-basis.img{{/qn_image}}
+imgdir=./.$(realpath $img | sed -e s:/:-:g)
+append="ramdisk_size=$((($(find -L "${img}" -printf %s)+1023) >> 10))"
+unsquashfs -f -d $imgdir $img boot/zImage boot/versatile-pb.dtb
+
+{{> inc/netbox-disk}}
+
+exec qemu-system-arm -M versatilepb -dtb $imgdir/boot/versatile-pb.dtb \
+  -m {{#qn_mem}}{{qn_mem}}{{/qn_mem}}{{^qn_mem}}128M{{/qn_mem}} \
+{{> inc/qemu-links}}
+  -kernel $imgdir/boot/zImage -initrd $img \
+{{> inc/netbox-common}}

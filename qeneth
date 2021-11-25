@@ -360,6 +360,7 @@ usage: ${0} <command> [<args>]
 
   ${0} console <node>
     Start a telnet session to the specified node's console.
+    To detach: use telnet Ctrl-] for a prompt, and 'quit' to exit.
 
   ${0} monitor <node>
     Start a telnet session to the specified node's monitor.

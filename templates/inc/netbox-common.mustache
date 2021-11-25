@@ -1,7 +1,9 @@
-  -append "root=/dev/ram console=$con,115200 {{qn_append}}" \
+  -append "root=/dev/ram console=$con,115200 $append {{qn_append}}" \
   -device virtio-serial -device virtconsole,chardev=hvc0 -device virtconsole,chardev=hvc1 -device virtconsole,chardev=hvc2 \
     -display none -monitor telnet::{{qn_monitor}},server,nowait -gdb tcp::{{qn_kgdb}},server,nowait \
     -chardev socket,id=hvc0,host=localhost,port={{qn_console}},server,nowait,telnet \
     -chardev socket,id=hvc1,host=localhost,port={{qn_ugdb}},server,nowait,telnet \
     -chardev stdio,mux=on,id=hvc2 \
-  -drive if=virtio,file={{name}}.disk,format=raw
+  -drive if=virtio,file={{name}}.disk,format=raw \
+  -rtc base=utc,clock=host \
+  -watchdog i6300esb
