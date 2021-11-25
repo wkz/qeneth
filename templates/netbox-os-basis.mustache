@@ -10,6 +10,9 @@ unsquashfs -f -d $imgdir $img boot/zImage boot/versatile-pb.dtb
 
 {{> inc/netbox-disk}}
 
+# Disable pulseaudio warning
+export QEMU_AUDIO_DRV=none
+
 exec qemu-system-arm -M versatilepb -dtb $imgdir/boot/versatile-pb.dtb \
   -m {{#qn_mem}}{{qn_mem}}{{/qn_mem}}{{^qn_mem}}128M{{/qn_mem}} \
 {{> inc/qemu-links}}
