@@ -4,4 +4,6 @@
     -chardev socket,id=hvc0,host=localhost,port={{qn_console}},server,nowait,telnet \
     -chardev socket,id=hvc1,host=localhost,port={{qn_ugdb}},server,nowait,telnet \
     -chardev stdio,mux=on,id=hvc2 \
-  -drive if=virtio,file={{name}}.disk,format=raw
+  -drive if=virtio,file={{name}}.disk,format=raw \
+  -rtc base=utc,clock=host \
+  -watchdog i6300esb
