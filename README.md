@@ -82,7 +82,7 @@ we've used `neato -Tpng topology.dot.in -otopology.png`:
 Everything we need is in place - now we can generate the executables:
 
 ```sh
-~/my-network(v) qeneth generate
+~/my-network$ qeneth generate
 Info: Generating topology
 Info: Generating node YAML
 Info: Generating executables
@@ -137,6 +137,63 @@ When we are done, we stop all the nodes:
 Info: Stopping server
 Info: Stopping client1
 Info: Stopping client2
+```
+
+
+### Host Interaction
+
+In addition to VM-to-VM communication, a Qeneth network can also be
+connected to the host system. This is done by connecting a VM port to
+a port on a node named `host`. Every port on `host` will show up as a
+TAP interface.
+
+Let's look at an example topology (`~/host-net/topology.dot.in`):
+
+```.dot
+graph "host-net" {
+	node [shape=record];
+	qn_template="netbox-os-zero";
+
+	host  [label="host | { <tap-zero> tap-zero }"];
+	zero  [label="zero | { <eth0> eth0 | <eth1> eth1 }"];
+
+	host:"tap-zero" -- zero:eth0;
+}
+```
+
+After generating and starting the network, a new TAP interface
+(`tap-zero`) is created, which is connected to `eth0` inside the VM
+`zero`:
+
+```sh
+~/host-net$ qeneth generate && qeneth start
+Info: Generating topology
+Info: Generating node YAML
+gvpr: warning: Using value of uninitialized edge attribute "qn_headport" of "host--zero"
+Info: Generating executables
+Info: Launching zero
+~/host-net$ ip -br link | grep tap-zero
+tap-zero         UNKNOWN        8a:78:38:95:59:d0 <BROADCAST,MULTICAST,UP,LOWER_UP>
+~/host-net$ ip addr add 10.10.10.1/24 dev tap-zero
+~/host-net$ qeneth console zero
+Trying ::1...
+Connected to localhost.
+
+NetBox - The Networking Toolbox
+zero login: root
+root@zero:~# ip addr add 10.10.10.2/24 dev vlan1
+root@zero:~# ping -c 3 10.10.10.1
+PING 10.10.10.1 (10.10.10.1): 56 data bytes
+64 bytes from 10.10.10.1: seq=0 ttl=64 time=0.803 ms
+64 bytes from 10.10.10.1: seq=1 ttl=64 time=0.490 ms
+64 bytes from 10.10.10.1: seq=2 ttl=64 time=0.496 ms
+
+--- 10.10.10.1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.490/0.596/0.803 ms
+root@zero:~#
+telnet> q
+Connection closed.
 ```
 
 [NetBox]: https://github.com/westermo/netbox
