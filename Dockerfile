@@ -1,8 +1,11 @@
 FROM ubuntu:21.10
 
-#COPY CFG-Vault .
-#  Installs all dependances 
+COPY ./ /home/
+
+WORKDIR /home/
+
 ARG DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get -y update && \
     apt -y install \
     e2fsprogs graphviz \
@@ -16,23 +19,8 @@ RUN apt-get -y update && \
     net-tools
     
     
-# Adding tmux
 RUN pip3 install web.py 
 RUN pip3 install graphviz
-
-# needs the rikght 
-#RUN wget https://github.com/westermo/netbox/blob/master/doc/igmp-seminar/topology.dot.in
-
-COPY qeneth .
-
-COPY topology.dot.in .
-
-COPY /web /web
-
-COPY qeneth-complete.sh .
-
-COPY /templates /templates
-
 
 CMD ./qeneth generate && ./qeneth start && ./qeneth web 
 
