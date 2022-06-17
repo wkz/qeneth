@@ -19,8 +19,7 @@ RUN apt-get -y update && \
     net-tools
     
     
-RUN pip3 install web.py 
-RUN pip3 install graphviz
+RUN pip3 install web.py
 
 CMD ./qeneth generate && ./qeneth start && ./qeneth web 
 
