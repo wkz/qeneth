@@ -6,7 +6,7 @@ tty -s && con=hvc2
 img={{#qn_image}}{{qn_image}}{{/qn_image}}{{^qn_image}}netbox-os-basis.img{{/qn_image}}
 imgdir=./.$(realpath $img | sed -e s:/:-:g)
 append="ramdisk_size=$((($(find -L "${img}" -printf %s)+1023) >> 10))"
-unsquashfs -f -d $imgdir $img boot/zImage boot/versatile-pb.dtb
+unsquashfs -f -d $imgdir $img boot/zImage boot/versatile-pb.dtb >/dev/null
 
 {{> inc/netbox-disk}}
 
