@@ -6,7 +6,7 @@ tty -s && con=hvc2
 img={{#qn_image}}{{qn_image}}{{/qn_image}}{{^qn_image}}netbox-os-zero.img{{/qn_image}}
 imgdir=./.$(realpath $img | sed -e s:/:-:g)
 
-unsquashfs -f -d $imgdir $img boot/bzImage
+unsquashfs -f -d $imgdir $img boot/bzImage >/dev/null
 
 {{> inc/netbox-disk}}
 
