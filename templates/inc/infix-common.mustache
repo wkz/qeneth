@@ -1,0 +1,10 @@
+  -append "root=/dev/ram ramdisk_size=$imgsz console=$con,115200 $append {{qn_append}}"		\
+  -drive file={{name}}.disk,if=virtio,format=raw,bus=0,unit=1 -display none			\
+  -rtc base=utc,clock=vm -rtc clock=host -device i6300esb -device virtio-serial			\
+  -monitor telnet::{{qn_monitor}},server=on,wait=off -gdb tcp::{{qn_kgdb}},server=on,wait=off	\
+  -device virtconsole,chardev=hvc0								\
+  -device virtconsole,chardev=hvc1								\
+  -device virtconsole,chardev=hvc2								\
+  -chardev socket,id=hvc0,host=localhost,port={{qn_console}},server=on,wait=off,telnet=on	\
+  -chardev socket,id=hvc1,host=localhost,port={{qn_ugdb}},server=on,wait=off,telnet=on		\
+  -chardev stdio,mux=on,id=hvc2
