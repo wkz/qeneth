@@ -42,27 +42,27 @@ are required to run, on Debian based systems like Ubuntu or Linux Mint:
 Tutorial
 --------
 
-This example uses qeneth's built-in template for generating [NetBox][]
-VMs. Let's start by creating our directory where all files related to
-our network will be stored, and download a pre-built NetBox image into
-it:
+This tutorial makes use of one of the bundled [Infix][] NOS templates.
+We start by creating our tutorial directory where all files related to
+our network project will be stored.  Then we download a pre-built Infix
+Classic image into it:
 
 ```sh
-~$ mkdir my-network
-~$ cd my-network/
-~/my-network$ wget -q https://nightly.link/westermo/netbox/workflows/nightly-os/master/netbox-os-zero.zip
-~/my-network$ unzip netbox-os-zero.zip netbox-os-zero.img
-Archive:  netbox-os-zero.zip
-  inflating: netbox-os-zero.img
-~/my-network$ rm netbox-os-zero.zip
+~$ mkdir tutorial
+~$ cd tutorial/
+~/tutorial$ wget -q https://github.com/kernelkit/infix/releases/download/latest/infix-x86_64-classic.tar.gz
+~/tutorial$ tar xf infix-x86_64-classic.tar.gz infix-x86_64-classic/infix-x86_64-classic.img
+~/tutorial$ mv infix-x86_64-classic/infix-x86_64-classic.img .
+~/tutorial$ rmdir infix-x86_64-classic/
+~/tutorial$ rm infix-x86_64-classic.tar.gz
 ```
 
-Next, let's setup our topology, edit `~/my-network/topology.dot.in`:
+Next, let's setup our topology, edit `~/tutorial/topology.dot.in`:
 
 ```.dot
-graph "my-network" {
+graph "tutorial" {
         node [shape=record];
-        qn_template="netbox-os-zero";
+        qn_template="infix-x86_64-classic";
         qn_append="quiet";
 
         server [label="server | { <eth0> eth0 | <eth1> eth1 }"];
@@ -79,61 +79,56 @@ we've used `neato -Tpng topology.dot.in -otopology.png`:
 
 ![Network topology](topology.png)
 
-Everything we need is in place - now we can generate the executables:
+Everything we need is in place - now we can generate the scripts:
 
 ```sh
-~/my-network$ qeneth generate
+~/tutorial$ qeneth generate
 Info: Generating topology
 Info: Generating node YAML
 Info: Generating executables
-~/my-network$ ls
-client1       client2       netbox-os-zero.img  server.yaml   topology.dot.in
-client1.yaml  client2.yaml  server              topology.dot
+~/tutorial$ ls
+client1       client2       infix-x86_64-classic.img  server.yaml   topology.dot.in
+client1.yaml  client2.yaml  server                    topology.dot
 ```
 
 Finally, we can start our network:
 
 ```sh
-~/my-network$ qeneth start
+~/tutorial$ qeneth start
 Info: Launching server
 Info: Launching client1
 Info: Launching client2
-~/my-network$ qeneth status
+~/tutorial$ qeneth status
 NODE           PID  CNSOL  MONTR
 server     2811526  10000  10001
 client1    2811527  10010  10011
 client2    2811528  10020  10021
 ```
 
-After this we can attach to the different nodes and poke around:
+Attach to the different nodes with `qeneth console NODE`.  Use Ctrl-] to
+get to the `telnet>` prompt, quit with 'q' followed by enter:
 
 ```sh
-~/my-network$ qeneth console server
-Trying ::1...
+~/tutorial$ qeneth console server
+Trying 127.0.0.1...
 Connected to localhost.
 
-NetBox - The Networking Toolbox
-zero login: root
-root@zero:~# ip -br link
+Infix by KernelKit (console)
+server login: root
+Note: use help, show, and setup commands to set up and diagnose the system.
+root@server:~# ip -br link
 lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
-dummy0           DOWN           72:05:a3:d8:04:1e <BROADCAST,NOARP>
 eth0             UP             02:00:00:00:02:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
 eth1             UP             02:00:00:00:02:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
-gre0@NONE        DOWN           0.0.0.0 <NOARP>
-gretap0@NONE     DOWN           00:00:00:00:00:00 <BROADCAST,MULTICAST>
-erspan0@NONE     DOWN           00:00:00:00:00:00 <BROADCAST,MULTICAST>
-ip_vti0@NONE     DOWN           0.0.0.0 <NOARP>
-ip6tnl0@NONE     DOWN           :: <NOARP>
-br0              UP             02:00:00:00:02:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
-vlan1@br0        UP             02:00:00:00:02:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
-root@zero:~#
+root@server:~#
 telnet> Connection closed.
+~/tutorial$
 ```
 
 When we are done, we stop all the nodes:
 
 ```sh
-~/my-network$ qeneth stop
+~/tutorial$ qeneth stop
 Info: Stopping server
 Info: Stopping client1
 Info: Stopping client2
@@ -151,49 +146,50 @@ Let's look at an example topology (`~/host-net/topology.dot.in`):
 
 ```.dot
 graph "host-net" {
-	node [shape=record];
-	qn_template="netbox-os-zero";
+        node [shape=record];
+        qn_template="infix-x86_64-classic";
 
-	host  [label="host | { <tap-zero> tap-zero }"];
-	zero  [label="zero | { <eth0> eth0 | <eth1> eth1 }"];
+        host   [label="host  | { <tap-infix> tap-infix }"];
+        infix  [label="infix | { <eth0> eth0 | <eth1> eth1 }"];
 
-	host:"tap-zero" -- zero:eth0;
+        host:"tap-infix" -- infix:eth0;
 }
 ```
 
 After generating and starting the network, a new TAP interface
-(`tap-zero`) is created, which is connected to `eth0` inside the VM
-`zero`:
+(`tap-infix`) is created, which is connected to `eth0` inside the VM
+`infix`:
 
 ```sh
 ~/host-net$ qeneth generate && qeneth start
 Info: Generating topology
 Info: Generating node YAML
-gvpr: warning: Using value of uninitialized edge attribute "qn_headport" of "host--zero"
+gvpr: warning: Using value of uninitialized edge attribute "qn_headport" of "host--infix"
 Info: Generating executables
-Info: Launching zero
-~/host-net$ ip -br link | grep tap-zero
-tap-zero         UNKNOWN        8a:78:38:95:59:d0 <BROADCAST,MULTICAST,UP,LOWER_UP>
-~/host-net$ ip addr add 10.10.10.1/24 dev tap-zero
-~/host-net$ qeneth console zero
-Trying ::1...
+Info: Launching infix
+~/host-net$ ip -br link | grep tap-infix
+tap-infix        DOWN           ce:fe:82:f8:cd:19 <BROADCAST,MULTICAST>
+~/host-net$ ip addr add 10.10.10.1/24 dev tap-infix
+~/host-net$ qeneth console infix
+Trying 127.0.0.1...
 Connected to localhost.
 
-NetBox - The Networking Toolbox
-zero login: root
-root@zero:~# ip addr add 10.10.10.2/24 dev vlan1
-root@zero:~# ping -c 3 10.10.10.1
+Infix by KernelKit (console)
+infix login: root
+Note: use help, show, and setup commands to set up and diagnose the system.
+root@infix:~# ip addr add 10.10.10.2/24 dev eth0
+root@infix:~# ping -c 3 10.10.10.1
 PING 10.10.10.1 (10.10.10.1): 56 data bytes
-64 bytes from 10.10.10.1: seq=0 ttl=64 time=0.803 ms
-64 bytes from 10.10.10.1: seq=1 ttl=64 time=0.490 ms
-64 bytes from 10.10.10.1: seq=2 ttl=64 time=0.496 ms
+64 bytes from 10.10.10.1: seq=0 ttl=64 time=0.241 ms
+64 bytes from 10.10.10.1: seq=1 ttl=64 time=0.474 ms
+64 bytes from 10.10.10.1: seq=2 ttl=64 time=0.504 ms
 
 --- 10.10.10.1 ping statistics ---
 3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 0.490/0.596/0.803 ms
-root@zero:~#
+round-trip min/avg/max = 0.241/0.406/0.504 ms
+root@infix:~#
 telnet> q
 Connection closed.
 ```
 
-[NetBox]: https://github.com/westermo/netbox
+[Infix]: https://github.com/kernelkit/infix
