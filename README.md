@@ -1,8 +1,8 @@
 Qeneth
 ======
 
-String together QEMU VMs with UDP sockets using graphviz(7),
-mustache(1) and duct tape.
+String together QEMU VMs with UDP sockets using [graphviz(7)][],
+[mustache(1)][] and duct tape.
 
 ```
                .--------.
@@ -27,8 +27,9 @@ also be run manually or through some other process monitor.
 Installation
 ------------
 
-Clone the repository and place `qeneth` is in your `$PATH`.  A few tools
-are required to run, on Debian based systems like Ubuntu or Linux Mint:
+Clone the repository and place the absolute path to `qeneth` is in your
+`$PATH`.  A few tools are required to run, on Debian based systems like
+Ubuntu or Linux Mint:
 
 ```sh
 ~$ sudo apt install e2fsprogs graphviz ruby-mustache squashfs-tools \
@@ -193,3 +194,5 @@ Connection closed.
 ```
 
 [Infix]: https://github.com/kernelkit/infix
+[graphviz(7)]: https://graphviz.org/
+[mustache(1)]: https://mustache.github.io/
