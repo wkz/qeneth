@@ -23,6 +23,11 @@ info()
     printf "Info: %s\n" "$@" >&2
 }
 
+print()
+{
+    printf "\e[37;44m>>> %s\e[0m\n" "$@" >&2
+}
+
 selftest()
 {
     gvpr -V >/dev/null 2>&1 || die "gvpr(1) not found, is graphviz installed?"
@@ -35,6 +40,43 @@ selftest()
 	[ -f topology.dot ] && return
 	die "No topology.dot, please run $0 generate first"
     fi
+}
+
+example()
+{
+    print "Creating example/ directory ..."
+    mkdir example || exit 1
+    cd example/
+
+    print "Fetching Infix x86-64 Classic ..."
+    wget -q --show-progress --progress=bar:force:noscroll https://github.com/kernelkit/infix/releases/download/latest/infix-x86_64-classic.tar.gz >/dev/null
+
+    print "Extracting Infix x86-64 Classic image from tarball ..."
+    tar xf infix-x86_64-classic.tar.gz infix-x86_64-classic/infix-x86_64-classic.img
+    mv infix-x86_64-classic/infix-x86_64-classic.img .
+    rmdir infix-x86_64-classic/
+    rm infix-x86_64-classic.tar.gz
+
+    print "Creating topology.dot.in ..."
+    cat <<-EOF >topology.dot.in
+	graph "example" {
+	    node [shape=record];
+	    qn_template="infix-x86_64-classic";
+	    qn_append="quiet";
+
+	    server [label="server | { <eth0> eth0 | <eth1> eth1 }"];
+	    client1 [label="client1 | { <eth0> eth0 }"];
+	    client2 [label="client2 | { <eth0> eth0 }"];
+
+	    server:eth0 -- client1:eth0;
+	    server:eth1 -- client2:eth0;
+	}
+	EOF
+
+    selftest -g
+    print "Generating ..."
+    generate
+    print "Done, enter the example directory and continue manually from there."
 }
 
 nodeattr()
@@ -386,6 +428,9 @@ cmd=${1}
 shift
 
 case ${cmd} in
+    example)
+	example
+	;;
     generate)
 	selftest -g
 	generate
