@@ -172,17 +172,17 @@ genyaml()
     		    if (hasAttr($, attr) && aget($, attr))
     		    	continue;
 
-    		    printf(yaml, "%s: %s\n", attr, aget($G, attr));
+    		    printf(yaml, "%s: \"%s\"\n", attr, aget($G, attr));
     		}
 
-    		printf(yaml, "name: %s\n", $.name);
+    		printf(yaml, "name: \"%s\"\n", $.name);
 
     		/* Output node attributes */
     		for (attr = fstAttr($G, "N"); attr; attr = nxtAttr($G, "N", attr)) {
     		    if (!(hasAttr($, attr) && aget($, attr)))
     		    	continue;
 
-    		    printf(yaml, "%s: %s\n", attr, aget($, attr));
+    		    printf(yaml, "%s: \"%s\"\n", attr, aget($, attr));
     		}
 
     		printf(yaml, "links:\n");
