@@ -4,7 +4,7 @@ con=hvc0
 tty -s && con=hvc2
 
 img={{#qn_image}}{{qn_image}}{{/qn_image}}{{^qn_image}}infix-x86_64.img{{/qn_image}}
-imgsz=$((($(stat -c %s $img) + 1023) >> 10))
+imgsz=$((($(stat -Lc %s $img) + 1023) >> 10))
 imgdir=./.$(realpath $img | sed -e s:/:-:g)
 
 unsquashfs -n -f -d $imgdir $img boot/bzImage >/dev/null
