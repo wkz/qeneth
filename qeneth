@@ -260,7 +260,10 @@ genexec()
 	    [ -f $tmpl ] && break;
 	done
 
-	env -C $(dirname $tmpl) mustache $(realpath $1.yaml) $(basename $tmpl) >$1
+	local yaml=$(realpath $1.yaml)
+	local exe=$(dirname $yaml)/$1
+	(cd $(dirname $tmpl) && mustache $yaml $(basename $tmpl) >$exe)
+
 	chmod +x $1
 	shift 2
     done
