@@ -1,4 +1,4 @@
-  -append "root=/dev/ram console=$con,115200 $append {{qn_append}}"							   \
+  -append "root=/dev/ram0 console=$con,115200 $append {{qn_append}}"							   \
   -device virtio-serial -device virtconsole,chardev=hvc0 -device virtconsole,chardev=hvc1 -device virtconsole,chardev=hvc2 \
     -display none -monitor telnet::{{qn_monitor}},server=on,wait=off -gdb tcp::{{qn_kgdb}},server=on,wait=off 		   \
     -chardev socket,id=hvc0,host=localhost,port={{qn_console}},server=on,wait=off,telnet=on 				   \
