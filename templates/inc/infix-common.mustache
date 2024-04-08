@@ -1,4 +1,4 @@
-  -append "root=/dev/ram ramdisk_size=$imgsz console=$con,115200 $append {{qn_append}}"		\
+  -append "root=/dev/ram0 ramdisk_size=$imgsz console=$con,115200 $append {{qn_append}}"		\
   -drive file={{name}}.disk,if=virtio,format=raw,bus=0,unit=1 -display none			\
   -fw_cfg name=opt/hostname,string={{name}}							\
   -rtc base=utc,clock=vm -rtc clock=host -device i6300esb -device virtio-serial			\
