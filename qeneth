@@ -195,8 +195,15 @@ genyaml()
 	N [$.qn_template] {
 		edge_t e;
 
+		if ($.qn_basemac)
+			base_mac = $.qn_basemac;
+		else if ($G.qn_oui)
+			base_mac = sprintf("%s:00:00:00", $G.qn_oui);
+		else
+			base_mac = "02:00:00:00:00:00";
+
 		for (e = fstedge($); e; e = nxtedge(e, $)) {
-			printf("%s", $.name);
+			printf("%s %s", $.name, base_mac);
 
 			if (e.qn_headport) {
 				if (e.head == $)
@@ -209,6 +216,11 @@ genyaml()
 				else
 					printf(" qn_name %s ", e.tailport);
 			}
+
+			if (e.qn_headmac && e.head == $)
+				printf(" qn_mac %s ", e.qn_headmac);
+			if (e.qn_tailmac && e.tail == $)
+				printf(" qn_mac %s ", e.qn_tailmac);
 
 			for (attr = fstAttr($G, "E"); attr; attr = nxtAttr($G, "E", attr)) {
     		    		if (!(hasAttr(e, attr) && aget(e, attr)))
@@ -224,17 +236,23 @@ genyaml()
 		if (!links[$1])
 			nid++;
 
+		split($2, o, ":");
+		base = o[1] ":" o[2] ":" o[3] ":" o[4];
+
 		printf("  - {") >>$NF;
-		for (attr = 2; attr < NF; attr += 2) {
+		seen_mac = "";
+		for (attr = 3; attr < NF; attr += 2) {
 			val = attr + 1;
 
-			if (attr == "qn_mac")
-				seen_mac = true;
+			printf("%s = %s\n", $attr, $val);
+			if ($attr == "qn_mac")
+				seen_mac = "true";
 
-			printf(" %s: \"%s\",", $attr, $val) >>$NF;
+			printf("%s %s: \"%s\"", attr > 3 ? "," : "", $attr, $val) >>$NF;
 		}
 
-		printf(" qn_mac: \"02:00:00:00:%2.2x:%2.2x\"", nid, links[$1] + 1) >>$NF;
+		if (seen_mac != "true")
+	            printf(", qn_mac: \"%s:%2.2x:%2.2x\"", base, nid, links[$1] + 1) >>$NF;
 
 		printf(" }\n") >>$NF;
 
