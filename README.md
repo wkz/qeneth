@@ -46,41 +46,58 @@ Tutorial
 This tutorial makes use of one of the bundled [Infix][] NOS templates.
 We start by creating our tutorial directory where all files related to
 our network project will be stored.  Then we download a pre-built Infix
-Classic image into it:
+image into it:
 
 ```sh
 ~$ mkdir tutorial
 ~$ cd tutorial/
-~/tutorial$ wget -q https://github.com/kernelkit/infix/releases/download/latest/infix-x86_64-classic.tar.gz
-~/tutorial$ tar xf infix-x86_64-classic.tar.gz infix-x86_64-classic/infix-x86_64-classic.img
-~/tutorial$ mv infix-x86_64-classic/infix-x86_64-classic.img .
-~/tutorial$ rmdir infix-x86_64-classic/
-~/tutorial$ rm infix-x86_64-classic.tar.gz
+~/tutorial$ wget -q https://github.com/kernelkit/infix/releases/download/latest/infix-x86_64.tar.gz
+~/tutorial$ tar xf infix-x86_64.tar.gz infix-x86_64/infix-x86_64.img
+~/tutorial$ mv infix-x86_64/infix-x86_64.img .
+~/tutorial$ rm -rf infix-x86_64/ infix-x86_64.tar.gz
 ```
 
 Next, let's setup our topology, edit `~/tutorial/topology.dot.in`:
 
 ```.dot
 graph "tutorial" {
-        node [shape=record];
-        qn_template="infix-x86_64-classic";
-        qn_append="quiet";
+    node [shape=record];
+    qn_template="infix-x86_64";
+    qn_append="quiet";
+    qn_mem="512M";
+    qn_oui="00:a0:85";
 
-        server [label="server | { <eth0> eth0 | <eth1> eth1 }"];
-        client1 [label="client1 | { <eth0> eth0 }"];
-        client2 [label="client2 | { <eth0> eth0 }"];
+    server [label="server   | { <e1> e1 | <e2> e2 }", qn_basemac="00:07:7c:00:00:00"];
+    client1 [label="client1 | { <eth1> eth1 }"];
+    client2 [label="client2 | { <eth1> eth1 }"];
 
-        server:eth0 -- client1:eth0;
-        server:eth1 -- client2:eth0;
+    server:eth0 -- client1:eth0 [qn_tailmac="00:07:7c:12:34:56", qn_headmac="08:00:20:c0:ff:ee"];
+    server:eth1 -- client2:eth0;
 }
 ```
 
-Use your favorite graphviz(7) layout engine to visualize it.  Here
-we've used `neato -Tpng topology.dot.in -otopology.png`:
+The two clients in this example connect to the server, which has two
+interfaces named `e1` and `e2`.  We name all `<interfaces>` (called
+"ports" in graphviz) and put the same label on them.  The name is used
+in all qemu script generation and the label is "only" used when
+generating a graph.  Use your favorite graphviz(7) layout engine to
+visualize it.  Here we've used `neato -Tpng topology.dot.in
+-otopology.png`:
 
 ![Network topology](topology.png)
 
-Everything we need is in place - now we can generate the scripts:
+ - `qn-append` is what is appended to the kernel command line
+ - `qn_mem` overrides the template's default RAM size for all nodes
+ - `qn_oui` sets a default MAC OUI prefix for all nodes
+ - `qn_basemac` changes the base MAC used for all connections on one node
+ - `qn_tailmac` and `qn_headmac` overrides the MAC address for a specific interface on a link
+
+> **Note:** the names `headmac` and `tailmac` refer to the head and tail
+> end of the edge in the graph.  Even though we do not use directed
+> edges the left side is called the tail and the right is head.
+
+Everything we need is now in place - so we can generate the scripts and
+all support files:
 
 ```sh
 ~/tutorial$ qeneth generate
@@ -88,8 +105,9 @@ Info: Generating topology
 Info: Generating node YAML
 Info: Generating executables
 ~/tutorial$ ls
-client1       client2       infix-x86_64-classic.img  server.yaml   topology.dot.in
-client1.yaml  client2.yaml  server                    topology.dot
+client1         client2         infix-x86_64.img  server.yaml   topology.dot.in
+client1.mactab  client2.mactab  server            topology.dot
+client1.yaml    client2.yaml    server.mactab
 ```
 
 Finally, we can start our network:
