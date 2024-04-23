@@ -92,7 +92,6 @@ nodeattr()
 	}' topology.dot
 }
 
-
 gentopology()
 {
     info "Generating topology"
