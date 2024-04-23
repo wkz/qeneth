@@ -220,7 +220,7 @@ genyaml()
 			printf(" %s.yaml\n", $.name);
 		}
 	}
-	' topology.dot | sort -V | awk 'BEGIN { nid = -1; } {
+	' topology.dot | sort -V | awk 'BEGIN { nid = 0; } {
 		if (!links[$1])
 			nid++;
 
@@ -234,7 +234,7 @@ genyaml()
 			printf(" %s: \"%s\",", $attr, $val) >>$NF;
 		}
 
-		printf(" qn_mac: \"02:00:00:00:%2.2x:%2.2x\"", nid, links[$1]) >>$NF;
+		printf(" qn_mac: \"02:00:00:00:%2.2x:%2.2x\"", nid, links[$1] + 1) >>$NF;
 
 		printf(" }\n") >>$NF;
 
