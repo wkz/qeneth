@@ -67,11 +67,11 @@ graph "tutorial" {
     qn_mem="512M";
     qn_oui="00:a0:85";
 
-    server [label="server   | { <e1> e1 | <e2> e2 }", qn_basemac="00:07:7c:00:00:00"];
+    server [label="server   | { <e1> e1 | <e2> e2 }", qn_basemac="02:de:ad:00:00:00"];
     client1 [label="client1 | { <eth1> eth1 }"];
     client2 [label="client2 | { <eth1> eth1 }"];
 
-    server:eth0 -- client1:eth0 [qn_tailmac="00:07:7c:12:34:56", qn_headmac="08:00:20:c0:ff:ee"];
+    server:eth0 -- client1:eth0 [qn_tailmac="02:de:ad:12:34:56", qn_headmac="08:00:20:c0:ff:ee"];
     server:eth1 -- client2:eth0;
 }
 ```
