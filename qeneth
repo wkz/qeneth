@@ -195,7 +195,7 @@ genyaml()
 	N [$.qn_template] {
 		edge_t e;
 
-		if ($.qn_basemac)
+		if (hasAttr($, "qn_basemac"))
 			base_mac = $.qn_basemac;
 		else if ($G.qn_oui)
 			base_mac = sprintf("%s:00:00:00", $G.qn_oui);
@@ -217,10 +217,10 @@ genyaml()
 					printf(" qn_name %s ", e.tailport);
 			}
 
-			if (e.qn_headmac && e.head == $)
-				printf(" qn_mac %s ", e.qn_headmac);
-			if (e.qn_tailmac && e.tail == $)
-				printf(" qn_mac %s ", e.qn_tailmac);
+			if (hasAttr(e, "qn_headmac") && e.qn_headmac && e.head == $)
+				printf(" qn_mac: %s ", e.qn_headmac);
+			if (hasAttr(e, "qn_tailmac") && e.qn_tailmac && e.tail == $)
+				printf(" qn_mac: %s ", e.qn_tailmac);
 
 			for (attr = fstAttr($G, "E"); attr; attr = nxtAttr($G, "E", attr)) {
     		    		if (!(hasAttr(e, attr) && aget(e, attr)))
