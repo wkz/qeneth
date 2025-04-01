@@ -1,4 +1,0 @@
-if [ ! -e {{name}}.disk ]; then
-    qemu-img create -f raw {{name}}.disk 16M >/dev/null
-    mkfs.ext4 -q -L cfg {{name}}.disk
-fi
