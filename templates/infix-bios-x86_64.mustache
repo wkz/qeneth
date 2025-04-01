@@ -8,7 +8,7 @@ bios={{#qn_bios}}{{qn_bios}}{{/qn_bios}}{{^qn_bios}}OVMF.fd{{/qn_bios}}
 {{> inc/infix-usb}}
 
 origimg=$(realpath $img)
-qemu-img create -f qcow2 -o backing_file=$origimg -F raw {{name}}.qcow2
+qemu-img create -f qcow2 -o backing_file=$origimg -F qcow2 {{name}}.qcow2
 
 truncate -s 0 $imgdir/{{name}}.mactab
 {{#links}}
