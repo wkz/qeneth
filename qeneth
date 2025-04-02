@@ -48,20 +48,21 @@ example()
     mkdir example || exit 1
     cd example/
 
-    print "Fetching Infix x86-64 Classic ..."
-    wget -q --show-progress --progress=bar:force:noscroll https://github.com/kernelkit/infix/releases/download/latest/infix-x86_64-classic.tar.gz >/dev/null
+    print "Fetching Infix x86-64 ..."
+    wget -q --show-progress --progress=bar:force:noscroll https://github.com/kernelkit/infix/releases/download/latest/infix-x86_64.tar.gz >/dev/null
 
-    print "Extracting Infix x86-64 Classic image from tarball ..."
-    tar xf infix-x86_64-classic.tar.gz infix-x86_64-classic/infix-x86_64-classic.img
-    mv infix-x86_64-classic/infix-x86_64-classic.img .
-    rmdir infix-x86_64-classic/
-    rm infix-x86_64-classic.tar.gz
+    print "Extracting Infix x86-64 image from tarball ..."
+    tar xf infix-x86_64.tar.gz
+    mv "$(readlink -f infix-x86_64/infix-x86_64-disk.qcow2)" "infix-x86_64-disk.qcow2"
+    mv "$(readlink -f infix-x86_64/OVMF.fd)" "OVMF.fd"
+    rm -r infix-x86_64/
+    rm infix-x86_64.tar.gz
 
     print "Creating topology.dot.in ..."
     cat <<-EOF >topology.dot.in
 	graph "example" {
 	    node [shape=record];
-	    qn_template="infix-x86_64-classic";
+	    qn_template="infix-x86_64";
 	    qn_append="quiet";
 
 	    server [label="server | { <eth0> eth0 | <eth1> eth1 }"];
