@@ -101,6 +101,10 @@ gentopology()
 		int ctrl = 10000;
 		int data = 20000;
 
+		int ishub(obj_t obj) {
+			return hasAttr(obj, "qn_hub") && aget(obj, "qn_hub") == "true";
+		}
+
 		void sdflt(obj_t obj, string attr, string val) {
 			if (hasAttr(obj, attr) && aget(obj, attr))
 				return;
@@ -127,6 +131,11 @@ gentopology()
 		if ($.name == "host")
 			return;
 
+		if (ishub($)) {
+			idflt($, "qn_hubport", data++);
+			return;
+		}
+
 		sdflt($, "qn_template", "node");
 		idflt($, "qn_console", ctrl + 0);
 		idflt($, "qn_monitor", ctrl + 1);
@@ -137,12 +146,19 @@ gentopology()
 		for (e = fstedge($); e; e = nxtedge(e, $)) {
 			if (e.head.name == "host") {
 				sdflt(e, "qn_tap", e.headport);
-			} else if (e.tail.name == "host") {
-				sdflt(e, "qn_tap", e.tailport);
-			} else {
-				idflt(e, "qn_headport", data++);
-				idflt(e, "qn_tailport", data++);
+				continue;
 			}
+			if (e.tail.name == "host") {
+				sdflt(e, "qn_tap", e.tailport);
+				continue;
+			}
+
+			/* Hubs share a multicast bus, no point-to-point ports. */
+			if (ishub(e.head) || ishub(e.tail))
+				continue;
+
+			idflt(e, "qn_headport", data++);
+			idflt(e, "qn_tailport", data++);
 		}
 	}
 
@@ -206,7 +222,7 @@ genyaml()
 		for (e = fstedge($); e; e = nxtedge(e, $)) {
 			printf("%s %s", $.name, base_mac);
 
-			if (e.qn_headport) {
+			if (hasAttr(e, "qn_headport") && aget(e, "qn_headport")) {
 				if (e.head == $)
 					printf(" qn_name %s qn_sport %d qn_dport %d", e.headport, e.qn_headport, e.qn_tailport);
 				else
@@ -216,6 +232,11 @@ genyaml()
 					printf(" qn_name %s ", e.headport);
 				else
 					printf(" qn_name %s ", e.tailport);
+
+				if (e.tail == $ && hasAttr(e.head, "qn_hubport") && aget(e.head, "qn_hubport"))
+					printf(" qn_hub true qn_mport %s ", aget(e.head, "qn_hubport"));
+				if (e.head == $ && hasAttr(e.tail, "qn_hubport") && aget(e.tail, "qn_hubport"))
+					printf(" qn_hub true qn_mport %s ", aget(e.tail, "qn_hubport"));
 			}
 
 			if (hasAttr(e, "qn_headmac") && e.qn_headmac && e.head == $)
