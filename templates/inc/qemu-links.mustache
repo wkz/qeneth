@@ -3,4 +3,5 @@
     {{^qn_bridge}}{{#qn_tap}}-netdev tap,id={{qn_name}},ifname={{qn_tap}}{{/qn_tap}}{{/qn_bridge}} \
     {{#qn_bridge}}-netdev bridge,id={{qn_name}},br={{qn_bridge}}{{/qn_bridge}} \
     {{#qn_dport}}-netdev socket,id={{qn_name}},udp=localhost:{{qn_dport}},localaddr=localhost:{{qn_sport}}{{/qn_dport}} \
+    {{#qn_hub}}-netdev socket,id={{qn_name}},mcast=239.255.0.1:{{qn_mport}},localaddr=127.0.0.1{{/qn_hub}} \
 {{/links}}
